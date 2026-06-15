@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stroop Test / 斯特鲁普测试</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; color: #333;
+        }
+        .container {
+            background: white; border-radius: 20px; padding: 40px; max-width: 650px; width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
+        }
+        h1 { font-size: 2.2rem; margin-bottom: 5px; color: #2d3748; }
+        .subtitle { color: #718096; margin-bottom: 20px; font-size: 1rem; }
+        .language-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
+        .lang-btn {
+            padding: 8px 20px; border: 2px solid #e2e8f0; border-radius: 25px; background: white;
+            cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; color: #4a5568;
+        }
+        .lang-btn:hover { border-color: #667eea; color: #667eea; }
+        .lang-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-color: transparent; }
+        .mode-cards { display: grid; grid-template-columns: 1fr; gap: 20px; margin: 25px 0; }
+        @media (min-width: 500px) { .mode-cards { grid-template-columns: 1fr 1fr; } }
+        .mode-card {
+            border: 2px solid #e2e8f0; border-radius: 16px; padding: 25px 20px; cursor: pointer;
+            transition: all 0.3s ease; background: #f7fafc;
+        }
+        .mode-card:hover { border-color: #667eea; transform: translateY(-4px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2); }
+        .mode-card h3 { font-size: 1.2rem; margin-bottom: 10px; color: #2d3748; }
+        .mode-card p { color: #718096; font-size: 0.9rem; line-height: 1.5; }
+        .mode-card .icon { font-size: 2.5rem; margin-bottom: 15px; }
+        .stroop-card .icon { color: #e53e3e; }
+        .control-card .icon { color: #38a169; }
+        .word-display {
+            font-size: 4.5rem; font-weight: 800; margin: 40px 0 30px 0; min-height: 110px;
+            display: flex; align-items: center; justify-content: center; letter-spacing: 2px;
+        }
+        .word-display.chinese { font-size: 5rem; font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif; letter-spacing: 8px; }
+        .timer-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 15px; }
+        .timer-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.1s linear; border-radius: 4px; }
+        .timer-text { font-size: 1.2rem; font-weight: 600; color: #667eea; margin-bottom: 25px; }
+        .color-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px; }
+        .color-btn {
+            padding: 16px 8px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700;
+            color: white; cursor: pointer; transition: all 0.15s ease; text-transform: uppercase;
+            letter-spacing: 1px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); line-height: 1.3;
+        }
+        .color-btn .btn-sub { font-size: 0.75rem; opacity: 0.85; display: block; margin-top: 2px; font-weight: 500; }
+        .color-btn:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
+        .color-btn:active { transform: scale(0.95); }
+        .btn-red { background: #e53e3e; }
+        .btn-blue { background: #0077B6; }
+        .btn-green { background: #38a169; }
+        .btn-yellow { background: #E5A000; }
+        .btn-purple { background: #9D4EDD; }
+        .btn-black { background: #1a1a1a; }
+        .results-screen h2 { font-size: 1.8rem; margin-bottom: 15px; color: #2d3748; }
+        .result-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
+        .result-card { background: #f7fafc; border-radius: 12px; padding: 18px; border: 2px solid #e2e8f0; }
+        .result-card .label { font-size: 0.8rem; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .result-card .value { font-size: 1.6rem; font-weight: 800; color: #2d3748; }
+        .result-card.accuracy .value { color: #38a169; }
+        .result-card.rt .value { color: #667eea; }
+        .btn { display: inline-block; padding: 12px 28px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; margin: 6px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: #edf2f7; color: #4a5568; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .hidden { display: none !important; }
+        .instructions { background: #fffaf0; border-left: 4px solid #dd6b20; padding: 15px 18px; border-radius: 0 8px 8px 0; margin: 15px 0; text-align: left; font-size: 0.9rem; color: #744210; line-height: 1.6; }
+        .instructions strong { display: block; margin-bottom: 5px; }
+        .countdown-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; color: white; font-size: 6rem; font-weight: 800; }
+        .mode-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-stroop { background: #fed7d7; color: #c53030; }
+        .badge-control { background: #c6f6d5; color: #276749; }
+        .footer-note { margin-top: 15px; font-size: 0.75rem; color: #a0aec0; }
+        .current-lang-display { font-size: 0.85rem; color: #667eea; font-weight: 600; margin-bottom: 10px; }
+        .lang-hint { font-size: 0.8rem; color: #a0aec0; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="startScreen">
+            <h1>🧠 Stroop Test</h1>
+            <p class="subtitle">Test your cognitive control and reaction time</p>
+            <div class="language-bar">
+                <button class="lang-btn active" id="btnLangEn" onclick="setLanguage('en')">English</button>
+                <button class="lang-btn" id="btnLangZh" onclick="setLanguage('zh')">简体中文</button>
+            </div>
+            <div class="current-lang-display" id="currentLangDisplay">Current language: English</div>
+            <div class="mode-cards">
+                <div class="mode-card stroop-card" onclick="selectMode('stroop')">
+                    <div class="icon">⚡</div>
+                    <h3 id="titleStroop">Stroop Test</h3>
+                    <p id="descStroop">Word and color <strong>do NOT match</strong>. Name the color of the text, not the word itself.</p>
+                </div>
+                <div class="mode-card control-card" onclick="selectMode('control')">
+                    <div class="icon">✅</div>
+                    <h3 id="titleControl">Control Test</h3>
+                    <p id="descControl">Word and color <strong>always match</strong>. Simply name the color you see. No cognitive conflict.</p>
+                </div>
+            </div>
+            <div class="instructions" id="instructionsBox">
+                <strong>How to play:</strong> Click the button that matches the <strong>COLOR of the text</strong> (not what the word says). Be as fast and accurate as possible!
+            </div>
+            <p class="lang-hint" id="langHint">Choose a test mode above to begin</p>
+        </div>
+        <div id="gameScreen" class="hidden">
+            <div id="modeBadge" class="mode-badge"></div>
+            <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+            <div class="timer-text" id="timerText">60s</div>
+            <div class="word-display" id="wordDisplay">READY?</div>
+            <div class="color-buttons">
+                <button class="color-btn btn-red" id="btnRed" onclick="handleAnswer('red')">RED<span class="btn-sub" id="subRed"></span></button>
+                <button class="color-btn btn-blue" id="btnBlue" onclick="handleAnswer('blue')">BLUE<span class="btn-sub" id="subBlue"></span></button>
+                <button class="color-btn btn-green" id="btnGreen" onclick="handleAnswer('green')">GREEN<span class="btn-sub" id="subGreen"></span></button>
+                <button class="color-btn btn-yellow" id="btnYellow" onclick="handleAnswer('yellow')">YELLOW<span class="btn-sub" id="subYellow"></span></button>
+                <button class="color-btn btn-purple" id="btnPurple" onclick="handleAnswer('purple')">PURPLE<span class="btn-sub" id="subPurple"></span></button>
+                <button class="color-btn btn-black" id="btnBlack" onclick="handleAnswer('black')">BLACK<span class="btn-sub" id="subBlack"></span></button>
+            </div>
+        </div>
+        <div id="resultsScreen" class="hidden">
+            <h2 id="resultTitle">🎉 Test Complete!</h2>
+            <div id="resultModeBadge" class="mode-badge" style="margin: 0 auto 15px;"></div>
+            <div class="result-cards">
+                <div class="result-card accuracy"><div class="label" id="labelAccuracy">Accuracy</div><div class="value" id="resultAccuracy">0%</div></div>
+                <div class="result-card rt"><div class="label" id="labelRT">Avg Reaction Time</div><div class="value" id="resultRT">0ms</div></div>
+                <div class="result-card"><div class="label" id="labelTrials">Total Trials</div><div class="value" id="resultTrials">0</div></div>
+                <div class="result-card"><div class="label" id="labelCorrect">Correct Answers</div><div class="value" id="resultCorrect">0</div></div>
+            </div>
+            <div id="stroopComparison" class="hidden" style="background: #fffaf0; border-radius: 12px; padding: 18px; margin: 15px 0; text-align: left;">
+                <strong style="color: #744210; display: block; margin-bottom: 8px;" id="compTitle">📊 Stroop Effect Analysis</strong>
+                <p style="color: #975a16; font-size: 0.9rem; line-height: 1.6;" id="compText">In the Stroop Test, your brain experiences <strong>cognitive interference</strong> when the word and color conflict. Compare your results with the Control Test to measure your Stroop interference effect.</p>
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="restartSameMode()" id="btnRestart">🔁 Same Mode Again</button>
+                <button class="btn btn-secondary" onclick="switchMode()" id="btnSwitch">🔄 Switch Mode</button>
+            </div>
+            <p class="footer-note" id="footerNote">Results are stored locally in your browser</p>
+        </div>
+    </div>
+    <div id="countdownOverlay" class="countdown-overlay hidden">3</div>
+<script>
+const TRANSLATIONS = {
+    en: {
+        title: '🧠 Stroop Test', subtitle: 'Test your cognitive control and reaction time',
+        currentLang: 'Current language: English', titleStroop: 'Stroop Test',
+        descStroop: 'Word and color <strong>do NOT match</strong>. Name the color of the text, not the word itself.',
+        titleControl: 'Control Test',
+        descControl: 'Word and color <strong>always match</strong>. Simply name the color you see. No cognitive conflict.',
+        instructions: '<strong>How to play:</strong> Click the button that matches the <strong>COLOR of the text</strong> (not what the word says). Be as fast and accurate as possible!',
+        hint: 'Choose a test mode above to begin',
+        btnLabels: ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'BLACK'],
+        btnSubs: ['', '', '', '', '', ''],
+        resultTitle: '🎉 Test Complete!', labelAccuracy: 'Accuracy', labelRT: 'Avg Reaction Time',
+        labelTrials: 'Total Trials', labelCorrect: 'Correct Answers',
+        compTitle: '📊 Stroop Effect Analysis',
+        compText: 'In the Stroop Test, your brain experiences <strong>cognitive interference</strong> when the word and color conflict. Compare your results with the Control Test to measure your Stroop interference effect.',
+        btnRestart: '🔁 Same Mode Again', btnSwitch: '🔄 Switch Mode',
+        footer: 'Results are stored locally in your browser',
+        badgeStroop: 'Stroop Test (Incongruent)', badgeControl: 'Control Test (Congruent)',
+        badgeResultStroop: 'Stroop Test Results', badgeResultControl: 'Control Test Results',
+        ready: 'READY?', countdown: ['3', '2', '1', 'GO!']
+    },
+    zh: {
+        title: '🧠 斯特鲁普测试', subtitle: '测试你的认知控制和反应速度',
+        currentLang: '当前语言：简体中文', titleStroop: '斯特鲁普测试',
+        descStroop: '文字和颜色<strong>不匹配</strong>。说出文字的颜色，而不是文字本身的意思。',
+        titleControl: '对照测试',
+        descControl: '文字和颜色<strong>始终匹配</strong>。直接说出你看到的颜色。没有认知冲突。',
+        instructions: '<strong>玩法说明：</strong>点击与文字<strong>颜色</strong>匹配的按钮（而不是文字的意思）。尽可能快速且准确！',
+        hint: '选择上方的测试模式开始',
+        btnLabels: ['红', '蓝', '绿', '黄', '紫', '黑'],
+        btnSubs: ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Black'],
+        resultTitle: '🎉 测试完成！', labelAccuracy: '准确率', labelRT: '平均反应时间',
+        labelTrials: '总题数', labelCorrect: '正确数',
+        compTitle: '📊 斯特鲁普效应分析',
+        compText: '在斯特鲁普测试中，当文字和颜色冲突时，你的大脑会经历<strong>认知干扰</strong>。将结果与对照测试对比，可以测量你的斯特鲁普干扰效应。',
+        btnRestart: '🔁 再测一次', btnSwitch: '🔄 切换模式',
+        footer: '结果保存在浏览器本地',
+        badgeStroop: '斯特鲁普测试（不一致）', badgeControl: '对照测试（一致）',
+        badgeResultStroop: '斯特鲁普测试结果', badgeResultControl: '对照测试结果',
+        ready: '准备好了吗？', countdown: ['3', '2', '1', '开始！']
+    }
+};
+
+const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'black'];
+const COLOR_MAP = {
+    red: '#e53e3e', blue: '#0077B6', green: '#38a169',
+    yellow: '#E5A000', purple: '#9D4EDD', black: '#1a1a1a'
+};
+const COLOR_WORDS_ZH = {
+    red: '红', blue: '蓝', green: '绿', yellow: '黄', purple: '紫', black: '黑'
+};
+const DURATION = 60;
+
+let currentMode = null, currentLang = 'en', isRunning = false;
+let timeRemaining = DURATION, currentWord = null, currentColor = null;
+let trialStartTime = 0, results = { correct: 0, wrong: 0, trials: 0, reactionTimes: [] };
+let timerInterval = null, lastWord = null;
+
+const startScreen = document.getElementById('startScreen');
+const gameScreen = document.getElementById('gameScreen');
+const resultsScreen = document.getElementById('resultsScreen');
+const wordDisplay = document.getElementById('wordDisplay');
+const timerFill = document.getElementById('timerFill');
+const timerText = document.getElementById('timerText');
+const modeBadge = document.getElementById('modeBadge');
+const countdownOverlay = document.getElementById('countdownOverlay');
+
+const btnEls = {
+    red: document.getElementById('btnRed'), blue: document.getElementById('btnBlue'),
+    green: document.getElementById('btnGreen'), yellow: document.getElementById('btnYellow'),
+    purple: document.getElementById('btnPurple'), black: document.getElementById('btnBlack')
+};
+const subEls = {
+    red: document.getElementById('subRed'), blue: document.getElementById('subBlue'),
+    green: document.getElementById('subGreen'), yellow: document.getElementById('subYellow'),
+    purple: document.getElementById('subPurple'), black: document.getElementById('subBlack')
+};
+
+function setLanguage(lang) {
+    currentLang = lang;
+    document.getElementById('btnLangEn').classList.toggle('active', lang === 'en');
+    document.getElementById('btnLangZh').classList.toggle('active', lang === 'zh');
+    const t = TRANSLATIONS[lang];
+    document.querySelector('h1').textContent = t.title;
+    document.querySelector('.subtitle').textContent = t.subtitle;
+    document.getElementById('currentLangDisplay').textContent = t.currentLang;
+    document.getElementById('titleStroop').textContent = t.titleStroop;
+    document.getElementById('descStroop').innerHTML = t.descStroop;
+    document.getElementById('titleControl').textContent = t.titleControl;
+    document.getElementById('descControl').innerHTML = t.descControl;
+    document.getElementById('instructionsBox').innerHTML = t.instructions;
+    document.getElementById('langHint').textContent = t.hint;
+    COLORS.forEach((c, i) => {
+        btnEls[c].childNodes[0].textContent = t.btnLabels[i];
+        subEls[c].textContent = t.btnSubs[i];
+    });
+    document.getElementById('resultTitle').textContent = t.resultTitle;
+    document.getElementById('labelAccuracy').textContent = t.labelAccuracy;
+    document.getElementById('labelRT').textContent = t.labelRT;
+    document.getElementById('labelTrials').textContent = t.labelTrials;
+    document.getElementById('labelCorrect').textContent = t.labelCorrect;
+    document.getElementById('compTitle').textContent = t.compTitle;
+    document.getElementById('compText').innerHTML = t.compText;
+    document.getElementById('btnRestart').textContent = t.btnRestart;
+    document.getElementById('btnSwitch').textContent = t.btnSwitch;
+    document.getElementById('footerNote').textContent = t.footer;
+    if (!isRunning && startScreen.classList.contains('hidden') === false) {
+        wordDisplay.textContent = t.ready;
+    }
+}
+
+function selectMode(mode) {
+    currentMode = mode;
+    startScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    const t = TRANSLATIONS[currentLang];
+    if (mode === 'stroop') {
+        modeBadge.className = 'mode-badge badge-stroop';
+        modeBadge.textContent = t.badgeStroop;
+    } else {
+        modeBadge.className = 'mode-badge badge-control';
+        modeBadge.textContent = t.badgeControl;
+    }
+    resetGame();
+    startCountdown();
+}
+
+function resetGame() {
+    isRunning = false; timeRemaining = DURATION;
+    results = { correct: 0, wrong: 0, trials: 0, reactionTimes: [] };
+    lastWord = null;
+    timerFill.style.width = '100%';
+    timerText.textContent = DURATION + 's';
+    const t = TRANSLATIONS[currentLang];
+    wordDisplay.textContent = t.ready;
+    wordDisplay.style.color = '#2d3748';
+    wordDisplay.classList.remove('chinese');
+}
+
+function startCountdown() {
+    const t = TRANSLATIONS[currentLang];
+    let count = 0;
+    countdownOverlay.textContent = t.countdown[count];
+    countdownOverlay.classList.remove('hidden');
+    const countInterval = setInterval(() => {
+        count++;
+        if (count < 3) { countdownOverlay.textContent = t.countdown[count]; }
+        else if (count === 3) { countdownOverlay.textContent = t.countdown[3]; }
+        else { clearInterval(countInterval); countdownOverlay.classList.add('hidden'); startGame(); }
+    }, 800);
+}
+
+function startGame() {
+    isRunning = true;
+    nextTrial();
+    timerInterval = setInterval(() => {
+        timeRemaining -= 0.1;
+        if (timeRemaining <= 0) { timeRemaining = 0; endGame(); }
+        timerFill.style.width = (timeRemaining / DURATION * 100) + '%';
+        timerText.textContent = Math.ceil(timeRemaining) + 's';
+    }, 100);
+}
+
+function nextTrial() {
+    if (!isRunning) return;
+    let word, color;
+    if (currentMode === 'control') {
+        word = COLORS[Math.floor(Math.random() * COLORS.length)];
+        color = word;
+    } else {
+        word = COLORS[Math.floor(Math.random() * COLORS.length)];
+        const availableColors = COLORS.filter(c => c !== word);
+        color = availableColors[Math.floor(Math.random() * availableColors.length)];
+    }
+    if (word === lastWord && COLORS.length > 1) {
+        const alternatives = COLORS.filter(w => w !== lastWord);
+        if (currentMode === 'control') {
+            word = alternatives[Math.floor(Math.random() * alternatives.length)];
+            color = word;
+        } else {
+            word = alternatives[Math.floor(Math.random() * alternatives.length)];
+            const availColors = COLORS.filter(c => c !== word);
+            color = availColors[Math.floor(Math.random() * availColors.length)];
+        }
+    }
+    currentWord = word; currentColor = color; lastWord = word;
+    if (currentLang === 'zh') {
+        wordDisplay.textContent = COLOR_WORDS_ZH[word];
+        wordDisplay.classList.add('chinese');
+    } else {
+        wordDisplay.textContent = word.toUpperCase();
+        wordDisplay.classList.remove('chinese');
+    }
+    wordDisplay.style.color = COLOR_MAP[color];
+    trialStartTime = performance.now();
+}
+
+function handleAnswer(selectedColor) {
+    if (!isRunning) return;
+    const endTime = performance.now();
+    const rt = endTime - trialStartTime;
+    if (rt < 150) return;
+    results.trials++;
+    const isCorrect = selectedColor === currentColor;
+    if (isCorrect) {
+        results.correct++;
+        results.reactionTimes.push(rt);
+    } else {
+        results.wrong++;
+    }
+    nextTrial();
+}
+
+function endGame() {
+    isRunning = false;
+    clearInterval(timerInterval);
+    gameScreen.classList.add('hidden');
+    resultsScreen.classList.remove('hidden');
+    const accuracy = results.trials > 0 ? Math.round((results.correct / results.trials) * 100) : 0;
+    const avgRT = results.reactionTimes.length > 0
+        ? Math.round(results.reactionTimes.reduce((a, b) => a + b, 0) / results.reactionTimes.length)
+        : 0;
+    document.getElementById('resultAccuracy').textContent = accuracy + '%';
+    document.getElementById('resultRT').textContent = avgRT + 'ms';
+    document.getElementById('resultTrials').textContent = results.trials;
+    document.getElementById('resultCorrect').textContent = results.correct;
+    const t = TRANSLATIONS[currentLang];
+    const resultBadge = document.getElementById('resultModeBadge');
+    if (currentMode === 'stroop') {
+        resultBadge.className = 'mode-badge badge-stroop';
+        resultBadge.textContent = t.badgeResultStroop;
+        document.getElementById('stroopComparison').classList.remove('hidden');
+    } else {
+        resultBadge.className = 'mode-badge badge-control';
+        resultBadge.textContent = t.badgeResultControl;
+        document.getElementById('stroopComparison').classList.add('hidden');
+    }
+    saveResult(currentMode, { accuracy, avgRT, trials: results.trials, correct: results.correct, lang: currentLang });
+}
+
+function saveResult(mode, data) {
+    const key = 'stroop_results_' + mode + '_' + currentLang;
+    const history = JSON.parse(localStorage.getItem(key) || '[]');
+    history.push({ ...data, date: new Date().toISOString() });
+    if (history.length > 20) history.shift();
+    localStorage.setItem(key, JSON.stringify(history));
+}
+
+function restartSameMode() {
+    resultsScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    resetGame();
+    startCountdown();
+}
+
+function switchMode() {
+    resultsScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+    currentMode = null;
+}
+
+document.addEventListener('keydown', (e) => {
+    if (!isRunning) return;
+    const keyMap = { '1': 'red', '2': 'blue', '3': 'green', '4': 'yellow', '5': 'purple', '6': 'black' };
+    if (keyMap[e.key]) { handleAnswer(keyMap[e.key]); }
+});
+
+setLanguage('en');
+</script>
+</body>
+</html>
